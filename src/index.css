@@ -1,0 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0D0D0D;
+  --color-card: #161616;
+  --color-primary: #00FF94;
+  --color-primary-hover: #00CC76;
+  --color-live: #FF2D2D;
+  --color-secondary: #2DE1FC;
+
+  --font-family-sans: 'Manrope', 'Inter', sans-serif;
+  --font-family-heading: 'Oswald', sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-background);
+  color: white;
+  font-family: var(--font-family-sans);
+  overflow-x: hidden;
+}
+
+/* Hide scrollbar for horizontal carousels */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
