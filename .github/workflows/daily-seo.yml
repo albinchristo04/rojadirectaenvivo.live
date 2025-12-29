@@ -42,7 +42,7 @@ jobs:
       - name: Commit and Push Changes
         if: steps.git-check.outputs.changes != '0'
         run: |
-          git commit -m "chore: daily seo update [skip ci]"
+          git commit -m "chore: daily seo update"
           git push origin main
 
       - name: Ping Bing
