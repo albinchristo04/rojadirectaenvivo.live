@@ -1,0 +1,46 @@
+name: Daily SEO Automation
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Runs at 03:00 UTC every day
+  workflow_dispatch: # Allows manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Run SEO Generation
+        run: npm run seo
+        env:
+          NODE_ENV: production
+
+      - name: Check for Changes
+        id: git-check
+        run: |
+          git config --global user.name "SEO Automation Bot"
+          git config --global user.email "seo-bot@rojadirectaenvivo.live"
+          git add public/ sitemap*.xml robots.txt
+          git status
+          echo "changes=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
+
+      - name: Commit and Push Changes
+        if: steps.git-check.outputs.changes != '0'
+        run: |
+          git commit -m "chore: daily seo update [skip ci]"
+          git push origin main
