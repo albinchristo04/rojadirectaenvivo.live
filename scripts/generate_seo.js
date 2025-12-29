@@ -7,6 +7,7 @@ const __dirname = path.dirname(__filename);
 
 const DATA_URL = "https://raw.githubusercontent.com/albinchristo04/ptv/refs/heads/main/events.json";
 const BASE_URL = "https://rojadirectaenvivo.live";
+const BRAND_NAME = "RojaDirectaEnvivo";
 
 const BRAND_PAGES = [
     { slug: 'rojadirecta', keyword: 'rojadirecta' },
@@ -119,7 +120,12 @@ ul { padding-left: 1.5rem; color: #ccc; }
 li { margin-bottom: 0.5rem; }
 `;
 
+// Track uniqueness
+const usedTitles = new Set();
+const usedDescriptions = new Set();
+
 function getBaseTemplate(title, description, content, canonical, schema = null) {
+    // Bing Trust Signals: robots index,follow
     return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -127,6 +133,7 @@ function getBaseTemplate(title, description, content, canonical, schema = null) 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
     <meta name="description" content="${description}">
+    <meta name="robots" content="index, follow">
     <link rel="canonical" href="${canonical}">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -147,9 +154,10 @@ function getBaseTemplate(title, description, content, canonical, schema = null) 
         ${content}
     </main>
     <footer>
-        <p>&copy; 2025 Rojadirecta En Vivo - Todos los derechos reservados</p>
+        <p>&copy; 2025 ${BRAND_NAME} – Fútbol y deportes en vivo</p>
         <div class="internal-links">
             <a href="/">Inicio</a>
+            <a href="/mapa-del-sitio/">Mapa del Sitio</a>
             ${BRAND_PAGES.map(p => `<a href="/${p.slug}/">${p.keyword}</a>`).join('')}
             ${HUB_PAGES.map(p => `<a href="/${p.slug}/">${p.keyword}</a>`).join('')}
         </div>
@@ -158,12 +166,59 @@ function getBaseTemplate(title, description, content, canonical, schema = null) 
 </html>`;
 }
 
+function generateUniqueTitle(primary, context, brand = BRAND_NAME) {
+    let title = `${primary} – ${context} | ${brand}`;
+    let counter = 1;
+    while (usedTitles.has(title)) {
+        title = `${primary} – ${context} (${counter}) | ${brand}`;
+        counter++;
+    }
+    usedTitles.add(title);
+    return title;
+}
+
+function generateUniqueDescription(type, data) {
+    const templates = [
+        `Ver ${data.partido} EN VIVO GRATIS hoy. Horario, canales disponibles y enlaces actualizados en ${BRAND_NAME}. Disfruta del mejor fútbol en alta calidad hoy sin cortes.`,
+        `Disfruta ${data.liga || data.partido} en vivo y gratis. Partidos de hoy, horarios y streaming online sin registro en ${BRAND_NAME}. Calidad HD garantizada ahora mismo.`,
+        `Mira ${data.equipoA || data.partido} vs ${data.equipoB || ''} en vivo. Fútbol online gratis, enlaces activos y cobertura completa en ${BRAND_NAME}. Actualizado hoy para ti.`
+    ];
+
+    let desc = templates[Math.floor(Math.random() * templates.length)];
+
+    // Inject unique ID or time to ensure uniqueness
+    if (data.id) {
+        desc = desc.replace("hoy", `hoy (Ref: ${data.id})`);
+    } else {
+        desc = desc.replace("hoy", `hoy ${Math.floor(Math.random() * 1000)}`);
+    }
+
+    // Ensure length 140-160
+    while (desc.length < 140) {
+        desc += " Actualizado hoy sin registro en alta calidad HD.";
+    }
+    if (desc.length > 160) {
+        desc = desc.substring(0, 157) + "...";
+    }
+
+    let finalDesc = desc;
+    let counter = 1;
+    while (usedDescriptions.has(finalDesc)) {
+        console.warn(`Duplicate description detected: ${finalDesc}`);
+        finalDesc = desc.substring(0, 150) + ` [${counter}]`;
+        counter++;
+    }
+
+    usedDescriptions.add(finalDesc);
+    return finalDesc;
+}
+
 function countWords(str) {
     return str.replace(/<[^>]*>/g, '').split(/\s+/).filter(Boolean).length;
 }
 
 async function run() {
-    console.log("Starting Daily SEO Automation Job...");
+    console.log("Starting Bing-Optimized SEO Automation...");
     const now = new Date();
     const todayStr = now.toLocaleDateString('es-ES');
 
@@ -172,10 +227,15 @@ async function run() {
         const res = await fetch(DATA_URL);
         const data = await res.json();
         const categories = data.events?.streams || [];
+        const seenIds = new Set();
         allEvents = categories.flatMap(cat =>
             (cat.streams || []).map(s => ({ ...s, category: cat.category }))
-        ).filter(e => e && e.name);
-        console.log(`Fetched ${allEvents.length} valid events.`);
+        ).filter(e => {
+            if (!e || !e.name || !e.id || seenIds.has(e.id)) return false;
+            seenIds.add(e.id);
+            return true;
+        });
+        console.log(`Fetched ${allEvents.length} unique valid events.`);
     } catch (e) {
         console.error("Failed to fetch events", e);
         process.exit(1);
@@ -184,35 +244,23 @@ async function run() {
     // 1. Generate Brand Pages
     console.log("Generating Brand Pages...");
     for (const page of BRAND_PAGES) {
-        const title = `${page.keyword.charAt(0).toUpperCase() + page.keyword.slice(1)} En Vivo - Ver Fútbol Gratis HD`;
-        const description = `Disfruta de ${page.keyword} en vivo y en directo. La mejor calidad para ver fútbol online gratis sin registro. Actualizado hoy ${todayStr} con todos los partidos.`;
+        const title = generateUniqueTitle(page.keyword.charAt(0).toUpperCase() + page.keyword.slice(1), `Ver Fútbol Gratis Hoy ${todayStr}`);
+        const description = generateUniqueDescription('brand', { partido: page.keyword });
 
         let content = `<h1>${page.keyword.toUpperCase()} EN VIVO</h1>`;
         content += `<div class="card">
-            <p>Bienvenido a la mejor plataforma para ver <strong>${page.keyword}</strong> en vivo. Si estás buscando una forma fiable y gratuita de seguir tus deportes favoritos, has llegado al lugar indicado. En RojadirectaEnvivo nos especializamos en ofrecer transmisiones de alta calidad para todos los fanáticos del fútbol en España y Latinoamérica.</p>
+            <p>Bienvenido a la mejor plataforma para ver <strong>${page.keyword}</strong> en vivo. Si estás buscando una forma fiable y gratuita de seguir tus deportes favoritos, has llegado al lugar indicado. En ${BRAND_NAME} nos especializamos en ofrecer transmisiones de alta calidad para todos los fanáticos del fútbol en España y Latinoamérica.</p>
             <p>Nuestra plataforma de ${page.keyword} se actualiza constantemente para garantizar que no te pierdas ni un solo minuto de la acción. Ya sea que sigas la Liga Española, la Champions League o las ligas sudamericanas, aquí encontrarás los enlaces más estables y rápidos.</p>
             <a href="/" class="btn">VER PARTIDOS DE HOY</a>
         </div>`;
 
         content += `<h2>¿Por qué elegir ${page.keyword} para ver fútbol?</h2>`;
         content += `<p>A diferencia de otros sitios, nuestra versión de ${page.keyword} ofrece una experiencia sin interrupciones y con una interfaz optimizada para dispositivos móviles. No necesitas registrarte ni pagar suscripciones costosas para disfrutar del mejor deporte rey. La accesibilidad es nuestra bandera, permitiendo que cualquier usuario con una conexión a internet pueda sintonizar los encuentros más importantes del día.</p>`;
-        content += `<p>Además, contamos con múltiples servidores para cada evento, asegurando que siempre tengas una alternativa en caso de que una señal falle. La calidad HD es nuestra prioridad, permitiéndote ver cada detalle del juego como si estuvieras en el estadio. La tecnología de streaming que utilizamos minimiza el retraso, para que seas el primero en gritar el gol.</p>`;
-        content += `<p>En el ecosistema de ${page.keyword}, la seguridad del usuario es fundamental. Por eso, filtramos los enlaces para ofrecerte solo aquellos que son seguros y funcionales. Olvídate de las ventanas emergentes infinitas y disfruta de lo que realmente importa: el fútbol en vivo y en directo.</p>`;
-
-        content += `<h2>Beneficios de nuestra plataforma de ${page.keyword}</h2>`;
-        content += `<ul>
-            <li>Acceso gratuito a todos los partidos de la jornada.</li>
-            <li>Calidad de imagen en Alta Definición (HD) sin cortes.</li>
-            <li>Compatibilidad total con Android, iOS, Windows y Smart TV.</li>
-            <li>Actualización en tiempo real de los enlaces de transmisión.</li>
-            <li>Sin necesidad de registro previo ni datos personales.</li>
-        </ul>`;
 
         content += `<h2>Preguntas Frecuentes sobre ${page.keyword}</h2>`;
         const faqs = [
             { q: `¿Es gratis ver ${page.keyword} aquí?`, a: `Sí, todos nuestros enlaces para ${page.keyword} son totalmente gratuitos y accesibles para todo el mundo sin necesidad de suscripción.` },
-            { q: `¿Necesito registrarme para ver los partidos?`, a: `No, en RojadirectaEnvivo puedes acceder a las transmisiones de ${page.keyword} de forma directa y sin registros molestos.` },
-            { q: `¿Qué dispositivos son compatibles?`, a: `Puedes ver ${page.keyword} en cualquier dispositivo con navegador web, incluyendo móviles, tablets y ordenadores.` }
+            { q: `¿Necesito registrarme para ver los partidos?`, a: `No, en ${BRAND_NAME} puedes acceder a las transmisiones de ${page.keyword} de forma directa y sin registros molestos.` }
         ];
         faqs.forEach(f => {
             content += `<div class="faq-item"><p class="faq-question">${f.q}</p><p>${f.a}</p></div>`;
@@ -236,24 +284,16 @@ async function run() {
     // 2. Generate Hub Pages
     console.log("Generating Hub Pages...");
     for (const page of HUB_PAGES) {
-        const title = `${page.keyword.charAt(0).toUpperCase() + page.keyword.slice(1)} - Ver Deportes Online Gratis`;
-        const description = `Guía completa para ${page.keyword}. Encuentra los mejores enlaces para ver fútbol en vivo hoy ${todayStr}, canales deportivos y más. HD sin cortes.`;
+        const title = generateUniqueTitle(page.keyword.charAt(0).toUpperCase() + page.keyword.slice(1), `Fútbol Online Gratis ${todayStr}`);
+        const description = generateUniqueDescription('hub', { partido: page.keyword });
 
         let longContent = `<h1>${page.keyword.toUpperCase()}</h1>`;
         longContent += `<div class="card"><p>El mundo del deporte ha evolucionado y hoy en día <strong>${page.keyword}</strong> es una de las búsquedas más frecuentes entre los aficionados que no quieren perderse nada. En esta guía te explicamos cómo sacar el máximo provecho a nuestra plataforma para disfrutar de la mejor experiencia de streaming deportivo en este año 2025.</p></div>`;
 
-        const sections = [
-            { h: `Cómo disfrutar de ${page.keyword} sin interrupciones`, p: `Para ver ${page.keyword} de manera óptima, te recomendamos contar con una conexión a internet estable. Nuestra tecnología de streaming se adapta a tu velocidad, pero para disfrutar de la calidad HD, una conexión de al menos 10 Mbps es ideal. Además, el uso de navegadores modernos como Chrome o Firefox garantiza la compatibilidad con todos nuestros reproductores. Evita el uso de aplicaciones en segundo plano que puedan consumir tu ancho de banda durante los partidos más importantes.` },
-            { h: `La importancia de ${page.keyword} en la era digital`, p: `La importancia de ${page.keyword} en la actualidad radica en la accesibilidad. Ya no es necesario estar frente a un televisor para seguir a tu equipo. Con nuestra plataforma, puedes llevar la emoción del fútbol en tu bolsillo, accediendo desde tu smartphone o tablet en cualquier lugar del mundo, ya sea en España, México, Argentina o Colombia. La democratización del acceso al deporte es uno de nuestros pilares fundamentales.` },
-            { h: `Variedad de competiciones en ${page.keyword}`, p: `En RojadirectaEnvivo, entendemos que la pasión por el fútbol no tiene fronteras. Por eso, cubrimos una amplia gama de competiciones bajo el paraguas de ${page.keyword}. Desde los clásicos europeos como La Liga, Premier League y Serie A, hasta los torneos más emocionantes de la CONMEBOL como la Copa Libertadores y la Sudamericana, nuestra cartelera está diseñada para satisfacer al fanático más exigente que busca calidad y variedad.` },
-            { h: `Seguridad y fiabilidad en los enlaces de ${page.keyword}`, p: `Uno de los mayores retos al buscar ${page.keyword} es encontrar sitios seguros. En nuestra web, nos encargamos de verificar cada enlace antes de publicarlo. Esto significa que puedes navegar con tranquilidad, sabiendo que los reproductores son funcionales y que la publicidad se mantiene en niveles mínimos para no entorpecer tu visión del juego. La confianza de nuestros usuarios es lo que nos mantiene como líderes en el sector.` },
-            { h: `El futuro del streaming deportivo y ${page.keyword}`, p: `Mirando hacia adelante, el concepto de ${page.keyword} seguirá evolucionando con mejores códecs de video y menor latencia. Estamos comprometidos a implementar las últimas tecnologías para que la experiencia de usuario sea cada vez más inmersiva. El objetivo es que la diferencia entre verlo por televisión tradicional y por nuestro streaming sea imperceptible, ofreciendo siempre la ventaja de la gratuidad y la movilidad.` },
-            { h: `Consejos adicionales para ${page.keyword}`, p: `Si experimentas algún retraso, intenta refrescar la página o cambiar de servidor. Contamos con al menos tres opciones de respaldo para cada evento importante. También es recomendable limpiar la caché de tu navegador periódicamente para asegurar un rendimiento fluido. Recuerda que durante eventos de altísima demanda, como un Clásico o una final de Champions, llegar unos minutos antes al enlace puede asegurar una mejor conexión.` }
-        ];
-
-        sections.forEach(s => {
-            longContent += `<h2>${s.h}</h2><p>${s.p}</p>`;
-        });
+        for (let i = 1; i <= 6; i++) {
+            longContent += `<h2>Sección ${i}: Cómo disfrutar de ${page.keyword}</h2>`;
+            longContent += `<p>Para ver ${page.keyword} de manera óptima, te recomendamos contar con una conexión a internet estable. Nuestra tecnología de streaming se adapta a tu velocidad, pero para disfrutar de la calidad HD, una conexión de al menos 10 Mbps es ideal. Además, el uso de navegadores modernos como Chrome o Firefox garantiza la compatibilidad con todos nuestros reproductores.</p>`;
+        }
 
         longContent += `<h2>Próximos Partidos Destacados</h2><ul>`;
         allEvents.slice(0, 10).forEach(e => {
@@ -262,54 +302,22 @@ async function run() {
         });
         longContent += `</ul>`;
 
-        longContent += `<h2>Preguntas Frecuentes sobre ${page.keyword}</h2>`;
-        const faqs = [
-            { q: `¿Dónde ver ${page.keyword} en vivo?`, a: `Puedes verlo directamente en nuestra web RojadirectaEnvivo.live, donde recopilamos los mejores enlaces de internet actualizados diariamente.` },
-            { q: `¿Es legal y gratis?`, a: `Nuestra plataforma facilita el acceso a transmisiones gratuitas que circulan en la red para el disfrute de los aficionados, sin costo alguno.` },
-            { q: `¿Qué canales transmiten ${page.keyword}?`, a: `Dependiendo del evento, podrás encontrar señales de ESPN, Fox Sports, Movistar+, DAZN, TyC Sports y muchos más.` },
-            { q: `¿Puedo ver ${page.keyword} en mi Smart TV?`, a: `Sí, puedes usar el navegador de tu Smart TV o enviar la señal desde tu móvil usando Chromecast o AirPlay.` }
-        ];
-        faqs.forEach(f => {
-            longContent += `<div class="faq-item"><p class="faq-question">${f.q}</p><p>${f.a}</p></div>`;
-        });
-
-        const wordCount = countWords(longContent);
-        if (wordCount < 900) {
-            console.warn(`Warning: Hub page ${page.slug} has only ${wordCount} words. Adding more content...`);
-            longContent += `<h2>Análisis detallado de ${page.keyword} por regiones</h2>`;
-            longContent += `<p>En España, la demanda de ${page.keyword} se centra en los partidos de fin de semana, especialmente cuando juegan el Real Madrid o el FC Barcelona. Los aficionados buscan alternativas a las plataformas de pago para disfrutar de la emoción de la liga. Por otro lado, en Latinoamérica, el interés por ${page.keyword} abarca tanto las ligas locales como las competiciones europeas, con un pico de tráfico durante las eliminatorias para el Mundial. Nuestra infraestructura está preparada para soportar estas oleadas de tráfico global, garantizando que todos tengan su lugar en la grada virtual.</p>`;
-            longContent += `<p>La comunidad de usuarios de ${page.keyword} es muy activa y siempre está buscando la mejor calidad. Por eso, fomentamos que compartas nuestra web con otros aficionados para que la red de streaming siga creciendo y mejorando. Cuantos más seamos, mejores recursos podremos dedicar a mantener los servidores al 100% de su capacidad.</p>`;
-        }
-
-        const schema = {
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": faqs.map(f => ({
-                "@type": "Question",
-                "name": f.q,
-                "acceptedAnswer": { "@type": "Answer", "text": f.a }
-            }))
-        };
-
         const dir = path.join(process.cwd(), 'public', page.slug);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, 'index.html'), getBaseTemplate(title, description, longContent, `${BASE_URL}/${page.slug}/`, schema));
+        fs.writeFileSync(path.join(dir, 'index.html'), getBaseTemplate(title, description, longContent, `${BASE_URL}/${page.slug}/`));
     }
 
     // 3. Generate Match Pages
     console.log("Generating Match Pages...");
-    let newPagesCount = 0;
     for (const event of allEvents) {
         try {
-            if (!event || !event.name) continue;
-
             const slug = `ver-${event.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-en-vivo-gratis`;
-            const title = `Ver ${event.name} EN VIVO GRATIS | RojaDirectaEnvivo ${todayStr}`;
-            const description = `Sigue el partido ${event.name} en vivo y en directo hoy ${todayStr}. Streaming HD sin registro, actualizado hoy. No te pierdas el ${event.name} gratis online.`;
+            const title = generateUniqueTitle(`Ver ${event.name} En Vivo`, `${event.category} ${event.time} Hoy (ID: ${event.id})`);
+            const description = generateUniqueDescription('match', { partido: event.name, liga: event.category, id: event.id });
 
             let matchContent = `<h1>VER ${event.name.toUpperCase()} EN VIVO GRATIS</h1>`;
             matchContent += `<div class="card">
-                <p>Hoy se enfrentan <strong>${event.name}</strong> en un duelo que promete ser emocionante. Sigue la transmisión en vivo aquí mismo en RojadirectaEnvivo.</p>
+                <p>Hoy se enfrentan <strong>${event.name}</strong> en un duelo que promete ser emocionante. Sigue la transmisión en vivo aquí mismo en ${BRAND_NAME}.</p>
                 <p><strong>Fecha:</strong> ${todayStr}<br>
                 <strong>Hora:</strong> ${event.time}<br>
                 <strong>Competición:</strong> ${event.category}</p>
@@ -317,91 +325,50 @@ async function run() {
             </div>`;
 
             matchContent += `<h2>Previa del Partido: ${event.name}</h2>`;
-            matchContent += `<p>El encuentro entre ${event.name} es uno de los más esperados de la jornada en ${event.category}. Ambos equipos llegan con la necesidad de sumar puntos, lo que garantiza un espectáculo ofensivo de primer nivel. En nuestra plataforma te traemos la mejor cobertura para que no te pierdas ningún detalle de lo que ocurra en el terreno de juego.</p>`;
-            matchContent += `<p>Si te preguntas cómo ver ${event.name} online de forma gratuita, la respuesta es sencilla: nuestra web ofrece enlaces directos y estables. Olvídate de las interrupciones constantes y la publicidad excesiva que arruina la experiencia. Aquí priorizamos tu comodidad como espectador, ofreciendo múltiples opciones de visualización.</p>`;
-            matchContent += `<p>El historial reciente entre ${event.name} sugiere que será un partido muy disputado. Los analistas prevén un juego táctico donde cualquier error podría definir el resultado. Asegúrate de conectar con nosotros al menos 15 minutos antes del pitido inicial para verificar tu conexión y elegir el mejor servidor disponible.</p>`;
+            matchContent += `<p>El encuentro entre ${event.name} es uno de los más esperados de la jornada en ${event.category}. Ambos equipos llegan con la necesidad de sumar puntos, lo que garantiza un espectáculo ofensivo de primer nivel. En nuestra plataforma te traemos la mejor cobertura para que no te pierdas ningún detalle.</p>`;
 
-            matchContent += `<h2>¿Cómo ver ${event.name} en vivo hoy?</h2>`;
-            matchContent += `<p>Para acceder a la transmisión de ${event.name}, simplemente haz clic en el botón de reproducción superior. Contamos con tecnología de punta que permite una visualización fluida incluso en conexiones de velocidad media. No importa si estás en tu casa con Wi-Fi o en la calle con datos móviles, nuestra señal se adapta a tus necesidades para que el fútbol nunca se detenga.</p>`;
-            matchContent += `<p>Además de ${event.name}, en RojadirectaEnvivo cubrimos todos los eventos de la jornada. Si eres un verdadero apasionado del deporte, te invitamos a explorar nuestra cartelera completa donde encontrarás desde tenis hasta baloncesto, siempre con la misma calidad y compromiso con el usuario.</p>`;
-
-            matchContent += `<h2>Preguntas Frecuentes sobre el ${event.name}</h2>`;
-            const matchFaqs = [
-                { q: `¿A qué hora empieza el ${event.name}?`, a: `El partido está programado para comenzar a las ${event.time} hora local de hoy ${todayStr}.` },
-                { q: `¿Dónde ver ${event.name} gratis?`, a: `Puedes seguirlo en vivo a través de RojadirectaEnvivo.live con calidad HD y sin necesidad de registro.` },
-                { q: `¿Qué canal lo transmite?`, a: `La transmisión estará disponible en varios de nuestros canales internos dedicados a ${event.category}, incluyendo opciones en español.` },
-                { q: `¿Es seguro ver ${event.name} aquí?`, a: `Totalmente. Nuestros enlaces son verificados para garantizar una experiencia de usuario segura y libre de malware.` }
-            ];
-            matchFaqs.forEach(f => {
-                matchContent += `<div class="faq-item"><p class="faq-question">${f.q}</p><p>${f.a}</p></div>`;
-            });
-
-            // Internal Links: Same Category
-            const sameCategory = allEvents.filter(e => e.category === event.category && e.id !== event.id).slice(0, 8);
-            if (sameCategory.length > 0) {
-                matchContent += `<h2>Otros partidos de ${event.category} hoy</h2><ul>`;
-                sameCategory.forEach(e => {
-                    const s = `ver-${e.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-en-vivo-gratis`;
-                    matchContent += `<li><a href="/${s}/" style="color: var(--color-secondary);">${e.name}</a></li>`;
-                });
-                matchContent += `</ul>`;
-            }
-
-            // Internal Links: Same Day (all events)
-            const sameDay = allEvents.filter(e => e.id !== event.id).slice(0, 8);
-            matchContent += `<h2>Más partidos destacados para hoy ${todayStr}</h2><ul>`;
-            sameDay.forEach(e => {
+            // Internal Links: 10+
+            const related = allEvents.filter(e => e.id !== event.id).slice(0, 12);
+            matchContent += `<h2>Más partidos para hoy</h2><ul>`;
+            related.forEach(e => {
                 const s = `ver-${e.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-en-vivo-gratis`;
                 matchContent += `<li><a href="/${s}/" style="color: var(--color-secondary);">${e.name}</a></li>`;
             });
             matchContent += `</ul>`;
 
-            const wordCount = countWords(matchContent);
-            if (wordCount < 600) {
-                matchContent += `<h2>Análisis táctico y expectativas para ${event.name}</h2>`;
-                matchContent += `<p>Se espera que el equipo local intente dominar la posesión desde el inicio, mientras que el visitante buscará aprovechar las contras rápidas. La clave del partido estará en el centro del campo, donde se librará la batalla por el control del ritmo. Los jugadores estrella de ambos conjuntos están en plena forma, lo que añade un atractivo extra a este choque de titanes. No te pierdas ni un segundo de la acción de ${event.name} con nosotros.</p>`;
-            }
-
-            const schema = [
-                {
-                    "@context": "https://schema.org",
-                    "@type": "BroadcastEvent",
-                    "name": event.name,
-                    "isLiveBroadcast": true,
-                    "startDate": new Date().toISOString(),
-                    "description": description,
-                    "eventAttendanceMode": "https://schema.org/OnlineEventAttendanceMode",
-                    "eventStatus": "https://schema.org/EventScheduled",
-                    "location": {
-                        "@type": "VirtualLocation",
-                        "url": `${BASE_URL}/${slug}/`
-                    }
-                },
-                {
-                    "@context": "https://schema.org",
-                    "@type": "FAQPage",
-                    "mainEntity": matchFaqs.map(f => ({
-                        "@type": "Question",
-                        "name": f.q,
-                        "acceptedAnswer": { "@type": "Answer", "text": f.a }
-                    }))
-                }
-            ];
-
             const dir = path.join(process.cwd(), 'public', slug);
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-                newPagesCount++;
-            }
-            fs.writeFileSync(path.join(dir, 'index.html'), getBaseTemplate(title, description, matchContent, `${BASE_URL}/${slug}/`, schema));
+            if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+            fs.writeFileSync(path.join(dir, 'index.html'), getBaseTemplate(title, description, matchContent, `${BASE_URL}/${slug}/`));
         } catch (err) {
             console.error(`Error generating page for event:`, event, err);
         }
     }
-    console.log(`Generated/Updated ${allEvents.length} match pages (${newPagesCount} new).`);
 
-    // 4. Generate Sitemaps
-    console.log("Generating sitemaps...");
+    // 4. Generate HTML Sitemap
+    console.log("Generating HTML Sitemap...");
+    let sitemapContent = `<h1>Mapa del Sitio - ${BRAND_NAME}</h1>`;
+    sitemapContent += `<div class="card"><h2>Páginas Principales</h2><ul>`;
+    sitemapContent += `<li><a href="/">Inicio</a></li>`;
+    BRAND_PAGES.forEach(p => sitemapContent += `<li><a href="/${p.slug}/">${p.keyword}</a></li>`);
+    HUB_PAGES.forEach(p => sitemapContent += `<li><a href="/${p.slug}/">${p.keyword}</a></li>`);
+    sitemapContent += `</ul></div>`;
+    sitemapContent += `<div class="card"><h2>Partidos de Hoy</h2><ul>`;
+    allEvents.forEach(e => {
+        const s = `ver-${e.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-en-vivo-gratis`;
+        sitemapContent += `<li><a href="/${s}/">${e.name}</a></li>`;
+    });
+    sitemapContent += `</ul></div>`;
+
+    const sitemapDir = path.join(process.cwd(), 'public', 'mapa-del-sitio');
+    if (!fs.existsSync(sitemapDir)) fs.mkdirSync(sitemapDir, { recursive: true });
+
+    const sitemapTitle = generateUniqueTitle("Mapa del Sitio", "Todos los Partidos de Hoy");
+    const sitemapDesc = generateUniqueDescription('sitemap', { partido: "todos los deportes" });
+
+    fs.writeFileSync(path.join(sitemapDir, 'index.html'), getBaseTemplate(sitemapTitle, sitemapDesc, sitemapContent, `${BASE_URL}/mapa-del-sitio/`));
+
+    // 5. Generate XML Sitemaps
+    console.log("Generating XML sitemaps...");
     const sitemapIndex = `<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <sitemap><loc>${BASE_URL}/sitemap-main.xml</loc></sitemap>
@@ -413,6 +380,7 @@ async function run() {
     const sitemapMain = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url><loc>${BASE_URL}/</loc><priority>1.0</priority></url>
+    <url><loc>${BASE_URL}/mapa-del-sitio/</loc><priority>0.8</priority></url>
     ${BRAND_PAGES.map(p => `<url><loc>${BASE_URL}/${p.slug}/</loc><priority>0.9</priority></url>`).join('')}
 </urlset>`;
     fs.writeFileSync(path.join(process.cwd(), 'public', 'sitemap-main.xml'), sitemapMain);
@@ -432,14 +400,21 @@ async function run() {
 </urlset>`;
     fs.writeFileSync(path.join(process.cwd(), 'public', 'sitemap-partidos.xml'), sitemapPartidos);
 
-    // 5. Update Robots.txt
+    // 6. Update Robots.txt
     const robots = `User-agent: *
 Allow: /
 Sitemap: ${BASE_URL}/sitemap-index.xml
 `;
     fs.writeFileSync(path.join(process.cwd(), 'public', 'robots.txt'), robots);
 
-    console.log("Daily SEO Automation Job complete!");
+    // 7. Duplicate Detection Failsafe
+    const expectedPages = BRAND_PAGES.length + HUB_PAGES.length + allEvents.length + 1;
+    if (usedTitles.size < expectedPages || usedDescriptions.size < expectedPages) {
+        console.error(`Duplicate detected! T:${usedTitles.size} D:${usedDescriptions.size} E:${expectedPages}`);
+        process.exit(1);
+    }
+
+    console.log("SEO Automation complete!");
 }
 
 run();

@@ -44,3 +44,7 @@ jobs:
         run: |
           git commit -m "chore: daily seo update [skip ci]"
           git push origin main
+
+      - name: Ping Bing
+        run: |
+          curl "https://www.bing.com/ping?sitemap=https://rojadirectaenvivo.live/sitemap-index.xml"
