@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://rojadirectaenvivo.live/sitemap.xml
+Sitemap: https://rojadirectaenvivo.live/sitemap-index.xml
