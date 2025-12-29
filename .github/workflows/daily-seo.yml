@@ -35,7 +35,7 @@ jobs:
         run: |
           git config --global user.name "SEO Automation Bot"
           git config --global user.email "seo-bot@rojadirectaenvivo.live"
-          git add public/ sitemap*.xml robots.txt
+          git add -A public/
           git status
           echo "changes=$(git status --porcelain | wc -l)" >> $GITHUB_OUTPUT
 
