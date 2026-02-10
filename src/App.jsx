@@ -5,6 +5,7 @@ import Player from './pages/Player';
 import Article from './pages/Article';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import AdPopup from './components/AdPopup';
 import { autoSubmitCurrentPage } from './services/indexnow';
 
 // IndexNow auto-submit wrapper
@@ -33,6 +34,7 @@ function App() {
             </Routes>
           </main>
           <Footer />
+          <AdPopup />
         </div>
       </IndexNowWrapper>
     </Router>

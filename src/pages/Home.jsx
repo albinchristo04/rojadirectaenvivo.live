@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import Hero from '../components/Hero';
 import MatchCard from '../components/MatchCard';
+import BannerAd from '../components/BannerAd';
 import { fetchEvents } from '../services/api';
 import { getAllMatches, getLiveMatches, getUpcomingMatches } from '../utils/dataHelpers';
 import { Filter, Loader2 } from 'lucide-react';
@@ -62,6 +63,13 @@ const Home = () => {
             {/* Hero Section */}
             {!searchQuery && <Hero match={heroMatch} />}
 
+            {/* Banner Ad - Above Content */}
+            <div className="container mx-auto px-4 py-6">
+                <div className="flex justify-center">
+                    <BannerAd className="w-full max-w-2xl" />
+                </div>
+            </div>
+
             <div className="container mx-auto px-4 -mt-10 relative z-20">
 
                 {/* Live Matches Section */}
@@ -83,6 +91,11 @@ const Home = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Banner Ad - Between Live and Upcoming */}
+                <div className="my-8 flex justify-center">
+                    <BannerAd className="w-full max-w-2xl" />
+                </div>
 
                 {/* Category Tabs */}
                 <div className="mb-8 overflow-x-auto pb-2">
@@ -123,6 +136,11 @@ const Home = () => {
                             ))}
                         </div>
                     )}
+                </div>
+
+                {/* Banner Ad - Below Content */}
+                <div className="my-8 flex justify-center">
+                    <BannerAd className="w-full max-w-2xl" />
                 </div>
             </div>
         </div>

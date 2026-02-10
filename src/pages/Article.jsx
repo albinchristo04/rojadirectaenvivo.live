@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getArticleById, seoArticles } from '../data/seoArticles';
 import { ArrowLeft, Calendar, Clock, Tag, Share2 } from 'lucide-react';
 import { autoSubmitCurrentPage } from '../services/indexnow';
+import BannerAd from '../components/BannerAd';
 
 const Article = () => {
     const { slug } = useParams();
@@ -139,8 +140,18 @@ const Article = () => {
 
                 {/* Article Content */}
                 <article className="container mx-auto px-4 py-8 max-w-4xl">
+                    {/* Banner Ad - Above Content */}
+                    <div className="mb-8 flex justify-center">
+                        <BannerAd className="w-full max-w-2xl" />
+                    </div>
+                    
                     <div className="prose prose-invert prose-lg max-w-none">
                         {renderContent(article.content)}
+                    </div>
+
+                    {/* Banner Ad - Below Content */}
+                    <div className="my-8 flex justify-center">
+                        <BannerAd className="w-full max-w-2xl" />
                     </div>
 
                     {/* Share Section */}
@@ -156,6 +167,10 @@ const Article = () => {
 
                     {/* Related Articles */}
                     <div className="mt-12">
+                        {/* Banner Ad - Before Related Articles */}
+                        <div className="mb-6 flex justify-center">
+                            <BannerAd className="w-full max-w-2xl" />
+                        </div>
                         <h3 className="text-xl font-heading font-bold text-white mb-6 border-l-4 border-primary pl-3">
                             Artículos Relacionados
                         </h3>

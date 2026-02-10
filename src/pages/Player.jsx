@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import MatchCard from '../components/MatchCard';
 import MatchCountdown from '../components/MatchCountdown';
+import BannerAd from '../components/BannerAd';
 
 const Player = () => {
     const { id } = useParams();
@@ -145,6 +146,11 @@ const Player = () => {
             </div>
 
             <div className="container mx-auto px-4 py-6">
+                {/* Banner Ad - Above Content */}
+                <div className="mb-6 flex justify-center">
+                    <BannerAd className="w-full max-w-2xl" />
+                </div>
+
                 {/* Match Header */}
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-white/5 pb-6">
                     <div>
@@ -204,6 +210,11 @@ const Player = () => {
                     </div>
                 )}
 
+                {/* Banner Ad - Between Player and Content */}
+                <div className="my-6 flex justify-center">
+                    <BannerAd className="w-full max-w-2xl" />
+                </div>
+
                 {/* Main Content Grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Left Column - Main Content */}
@@ -212,6 +223,10 @@ const Player = () => {
                         {/* Odds Section */}
                         {odds && (
                             <div className="bg-card rounded-xl p-6 border border-white/5">
+                                {/* Banner Ad - In Content Area */}
+                                <div className="mb-4 flex justify-center">
+                                    <BannerAd className="w-full max-w-xs" />
+                                </div>
                                 <h3 className="text-lg font-heading font-bold text-white mb-4 flex items-center">
                                     <TrendingUp className="w-5 h-5 mr-2 text-primary" />
                                     Cuotas y Probabilidades
@@ -259,6 +274,10 @@ const Player = () => {
                         {/* Head to Head Section */}
                         {h2h && (
                             <div className="bg-card rounded-xl p-6 border border-white/5">
+                                {/* Banner Ad - In Content Area */}
+                                <div className="mb-4 flex justify-center">
+                                    <BannerAd className="w-full max-w-xs" />
+                                </div>
                                 <h3 className="text-lg font-heading font-bold text-white mb-4 flex items-center">
                                     <History className="w-5 h-5 mr-2 text-secondary" />
                                     Enfrentamientos Directos (H2H)
@@ -336,6 +355,10 @@ const Player = () => {
 
                         {/* Related News */}
                         <div className="bg-card rounded-xl p-6 border border-white/5">
+                            {/* Banner Ad - In Sidebar */}
+                            <div className="mb-4">
+                                <BannerAd className="w-full" />
+                            </div>
                             <h3 className="text-lg font-heading font-bold text-white mb-4 flex items-center">
                                 <Newspaper className="w-5 h-5 mr-2 text-secondary" />
                                 Noticias Relacionadas
@@ -378,6 +401,10 @@ const Player = () => {
                 {/* Recommended Matches */}
                 {relatedMatches.length > 0 && (
                     <div className="mt-12">
+                        {/* Banner Ad - Before Recommended */}
+                        <div className="mb-6 flex justify-center">
+                            <BannerAd className="w-full max-w-2xl" />
+                        </div>
                         <h3 className="text-xl font-heading font-bold mb-4 border-l-4 border-primary pl-3 flex items-center">
                             También te puede interesar
                             <ChevronRight className="w-5 h-5 ml-2 text-gray-500" />
@@ -393,6 +420,11 @@ const Player = () => {
                         </div>
                     </div>
                 )}
+
+                {/* Banner Ad - Below All Content */}
+                <div className="mt-8 flex justify-center">
+                    <BannerAd className="w-full max-w-2xl" />
+                </div>
             </div>
         </div>
     );
